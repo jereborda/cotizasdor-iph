@@ -49,8 +49,8 @@ export const partners = [
 
 // Vendors (Vendedores)
 export const vendors = [
-  { id: 'vendedor-interno', name: 'Vendedor Interno', commissionType: 'percentage', commissionValue: 5 },
-  { id: 'vendedor-externo', name: 'Vendedor Externo', commissionType: 'fixed', commissionValue: 50 },
+  { id: 'vendedor-interno', name: 'Vendedor Interno', commissionType: 'percentage', commissionValue: 2.5 },
+  { id: 'vendedor-externo', name: 'Vendedor Externo', commissionType: 'percentage', commissionValue: 2.5 },
 ]
 
 // Dollar types
@@ -420,8 +420,8 @@ export const defaultSettings = {
     defaultPercentage: 50,
   },
   vendors: [
-    { id: 'vendedor-interno', name: 'Vendedor Interno', commissionType: 'percentage', commissionValue: 5 },
-    { id: 'vendedor-externo', name: 'Vendedor Externo', commissionType: 'fixed', commissionValue: 50 },
+    { id: 'vendedor-interno', name: 'Vendedor Interno', commissionType: 'percentage', commissionValue: 2.5 },
+    { id: 'vendedor-externo', name: 'Vendedor Externo', commissionType: 'percentage', commissionValue: 2.5 },
   ],
   messages: {
     shortTemplate: `¡Hola! Te paso la cotización:
@@ -457,6 +457,26 @@ Las cuotas se abonan en pesos argentinos al valor del dólar venta del día de p
 
 Si tenés alguna consulta, estoy a disposición.`,
   },
+}
+
+// Remito
+export type Remito = {
+  id: string
+  vendor_id: string
+  vendor_name: string
+  client_name: string
+  client_phone: string
+  model: string
+  model_id: string
+  capacity: string
+  color: string
+  condition: string
+  sale_type: 'contado' | 'financiado'
+  installments: number
+  price_usd: number | null
+  notes: string | null
+  status: 'pendiente' | 'aceptado' | 'rechazado'
+  created_at: string
 }
 
 // Vendor Price key: "modelId_capacity_condition" e.g. "iphone-16-pro_256GB_nuevo"

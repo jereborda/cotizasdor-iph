@@ -9,6 +9,7 @@ import {
   CreditCard,
   Settings,
   Tag,
+  FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
@@ -19,6 +20,7 @@ const adminNav = [
   { name: "Vendedor", href: "/vendedor", icon: Tag },
   { name: "Ventas", href: "/ventas", icon: ShoppingCart },
   { name: "Cuotas", href: "/cuotas", icon: CreditCard },
+  { name: "Remitos", href: "/remitos", icon: FileText },
   { name: "Config", href: "/configuracion", icon: Settings },
 ]
 

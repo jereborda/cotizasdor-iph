@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
-import { currentDollarRate, type Sale, type Installment } from "@/lib/mock-data"
+import { currentDollarRate, type Sale, type Installment, type Remito } from "@/lib/mock-data"
 import {
   fetchSales,
   insertSale,
@@ -12,6 +12,9 @@ import {
   upsertModelCost,
   fetchVendorPrices,
   upsertVendorPrice,
+  fetchRemitos,
+  insertRemito,
+  updateRemitoStatus,
 } from "@/lib/supabase"
 
 interface DollarData {
@@ -28,12 +31,16 @@ interface AppState {
   dollar: DollarData
   modelCosts: Record<string, number>
   vendorPrices: Record<string, number>
+  remitos: Remito[]
+  remitosLoading: boolean
   agregarVenta: (sale: Sale) => Promise<void>
   editarVenta: (saleId: string, patch: Partial<Omit<Sale, 'installments'>>) => Promise<void>
   marcarCuotaCobrada: (installmentId: string, dollarRate: number) => Promise<void>
   refreshDollar: () => Promise<void>
   saveModelCost: (modelId: string, costUsd: number) => void
   saveVendorPrice: (key: string, priceUsd: number) => void
+  crearRemito: (remito: Omit<Remito, 'created_at'>) => Promise<void>
+  procesarRemito: (id: string, status: 'aceptado' | 'rechazado') => Promise<void>
 }
 
 const AppStateContext = createContext<AppState | null>(null)
@@ -43,6 +50,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [salesLoading, setSalesLoading] = useState(true)
   const [modelCosts, setModelCosts] = useState<Record<string, number>>({})
   const [vendorPrices, setVendorPrices] = useState<Record<string, number>>({})
+  const [remitos, setRemitos] = useState<Remito[]>([])
+  const [remitosLoading, setRemitosLoading] = useState(true)
   const [dollar, setDollar] = useState<DollarData>({
     blue: currentDollarRate.blue,
     compra: 1330,
@@ -65,6 +74,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     fetchVendorPrices()
       .then((data) => setVendorPrices(data))
       .catch(() => { /* vendor_prices table may not exist yet */ })
+
+    fetchRemitos()
+      .then((data) => setRemitos(data))
+      .catch(() => { /* remitos table may not exist yet */ })
+      .finally(() => setRemitosLoading(false))
   }, [])
 
   // ─── Dollar rate ─────────────────────────────────────────────────────────────
@@ -176,9 +190,26 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     })
   }, [sales])
 
+  const crearRemito = useCallback(async (remito: Omit<Remito, 'created_at'>) => {
+    await insertRemito(remito)
+    setRemitos((prev) => [{ ...remito, created_at: new Date().toISOString() }, ...prev])
+  }, [])
+
+  const procesarRemito = useCallback(async (id: string, status: 'aceptado' | 'rechazado') => {
+    await updateRemitoStatus(id, status)
+    setRemitos((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+  }, [])
+
   return (
     <AppStateContext.Provider
-      value={{ sales, salesLoading, dollar, modelCosts, vendorPrices, agregarVenta, editarVenta, marcarCuotaCobrada, refreshDollar: fetchDollar, saveModelCost, saveVendorPrice }}
+      value={{
+        sales, salesLoading, dollar, modelCosts, vendorPrices,
+        remitos, remitosLoading,
+        agregarVenta, editarVenta, marcarCuotaCobrada,
+        refreshDollar: fetchDollar,
+        saveModelCost, saveVendorPrice,
+        crearRemito, procesarRemito,
+      }}
     >
       {children}
     </AppStateContext.Provider>

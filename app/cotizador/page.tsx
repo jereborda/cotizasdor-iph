@@ -74,6 +74,7 @@ interface QuotationData {
   vendor: string
   commissionType: "fixed" | "percentage"
   commissionValue: number
+  soloYo: boolean
   partner1Investment: number
   partner2Investment: number
   splitMode: "50/50" | "proportional"
@@ -88,14 +89,15 @@ const defaultQuotation: QuotationData = {
   color: "",
   condition: "nuevo",
   costUSD: 1300,
-  profitUSD: 150,
-  profitType: "fixed",
+  profitUSD: 10,
+  profitType: "percentage",
   dollarType: "blue",
   dollarRate: currentDollarRate.blue,
   hasVendor: false,
   vendor: "",
   commissionType: "percentage",
-  commissionValue: 5,
+  commissionValue: 2.5,
+  soloYo: false,
   partner1Investment: 650,
   partner2Investment: 650,
   splitMode: "50/50",
@@ -166,8 +168,11 @@ export default function CotizadorPage() {
     // Partner split
     let partner1Profit = 0
     let partner2Profit = 0
-    
-    if (quotation.splitMode === "50/50") {
+
+    if (quotation.soloYo) {
+      partner1Profit = netProfitUSD
+      partner2Profit = 0
+    } else if (quotation.splitMode === "50/50") {
       partner1Profit = netProfitUSD / 2
       partner2Profit = netProfitUSD / 2
     } else {
@@ -687,13 +692,22 @@ export default function CotizadorPage() {
           {/* Partner Investment */}
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                Inversión de Socios
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Inversión de Socios
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Solo yo</span>
+                  <Switch
+                    checked={quotation.soloYo}
+                    onCheckedChange={(v) => updateQuotation({ soloYo: v, ...(v ? { partner1Investment: quotation.costUSD } : {}) })}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {quotation.soloYo ? (
                 <div className="space-y-2">
                   <Label>{partners[0].name} (USD)</Label>
                   <Input
@@ -705,37 +719,53 @@ export default function CotizadorPage() {
                     className="bg-secondary border-transparent font-mono"
                   />
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{partners[0].name} (USD)</Label>
+                      <Input
+                        type="number"
+                        value={quotation.partner1Investment}
+                        onChange={(e) =>
+                          updateQuotation({ partner1Investment: Number(e.target.value) })
+                        }
+                        className="bg-secondary border-transparent font-mono"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>{partners[1].name} (USD)</Label>
-                  <Input
-                    type="number"
-                    value={quotation.partner2Investment}
-                    onChange={(e) =>
-                      updateQuotation({ partner2Investment: Number(e.target.value) })
-                    }
-                    className="bg-secondary border-transparent font-mono"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <Label>{partners[1].name} (USD)</Label>
+                      <Input
+                        type="number"
+                        value={quotation.partner2Investment}
+                        onChange={(e) =>
+                          updateQuotation({ partner2Investment: Number(e.target.value) })
+                        }
+                        className="bg-secondary border-transparent font-mono"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Modo de Reparto</Label>
-                <Select
-                  value={quotation.splitMode}
-                  onValueChange={(v: "50/50" | "proportional") =>
-                    updateQuotation({ splitMode: v })
-                  }
-                >
-                  <SelectTrigger className="bg-secondary border-transparent">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="50/50">50/50 - Partes iguales</SelectItem>
-                    <SelectItem value="proportional">Proporcional a inversión</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label>Modo de Reparto</Label>
+                    <Select
+                      value={quotation.splitMode}
+                      onValueChange={(v: "50/50" | "proportional") =>
+                        updateQuotation({ splitMode: v })
+                      }
+                    >
+                      <SelectTrigger className="bg-secondary border-transparent">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="50/50">50/50 - Partes iguales</SelectItem>
+                        <SelectItem value="proportional">Proporcional a inversión</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -886,7 +916,7 @@ export default function CotizadorPage() {
                   </span>
                 </div>
                 <div className="h-px bg-primary/20" />
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className={`grid gap-4 text-sm ${quotation.soloYo ? "grid-cols-1" : "grid-cols-2"}`}>
                   <div>
                     <div className="text-muted-foreground">{partners[0].name}</div>
                     <div className="font-mono font-medium">
@@ -896,15 +926,17 @@ export default function CotizadorPage() {
                       ROI: {calculations.partner1ROI}%
                     </div>
                   </div>
-                  <div>
-                    <div className="text-muted-foreground">{partners[1].name}</div>
-                    <div className="font-mono font-medium">
-                      USD {calculations.partner2Profit.toFixed(2)}
+                  {!quotation.soloYo && (
+                    <div>
+                      <div className="text-muted-foreground">{partners[1].name}</div>
+                      <div className="font-mono font-medium">
+                        USD {calculations.partner2Profit.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        ROI: {calculations.partner2ROI}%
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      ROI: {calculations.partner2ROI}%
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 

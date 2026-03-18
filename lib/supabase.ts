@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Sale, Installment } from './mock-data'
+import type { Sale, Installment, Remito } from './mock-data'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -95,5 +95,29 @@ export async function upsertVendorPrice(key: string, priceUsd: number): Promise<
     { price_key: key, price_usd: priceUsd, updated_at: new Date().toISOString() },
     { onConflict: 'price_key' }
   )
+  if (error) throw error
+}
+
+// ─── Remitos ──────────────────────────────────────────────────────────────────
+
+export async function fetchRemitos(): Promise<Remito[]> {
+  const { data, error } = await supabase
+    .from('remitos')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as Remito[]
+}
+
+export async function insertRemito(remito: Omit<Remito, 'created_at'>): Promise<void> {
+  const { error } = await supabase.from('remitos').insert(remito)
+  if (error) throw error
+}
+
+export async function updateRemitoStatus(
+  id: string,
+  status: 'aceptado' | 'rechazado'
+): Promise<void> {
+  const { error } = await supabase.from('remitos').update({ status }).eq('id', id)
   if (error) throw error
 }

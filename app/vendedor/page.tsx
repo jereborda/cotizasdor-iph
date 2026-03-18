@@ -10,8 +10,13 @@ import {
   CreditCard,
   AlertCircle,
   Tag,
+  FileText,
+  Phone,
+  User,
+  SendHorizonal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -65,7 +70,7 @@ function processTemplate(
 }
 
 export default function VendedorPage() {
-  const { dollar, vendorPrices } = useAppState()
+  const { dollar, vendorPrices, crearRemito } = useAppState()
   const { profile } = useAuth()
 
   const [selectedModel, setSelectedModel] = useState("")
@@ -76,6 +81,10 @@ export default function VendedorPage() {
   const [installments, setInstallments] = useState(3)
   const [copiedShort, setCopiedShort] = useState(false)
   const [copiedLong, setCopiedLong] = useState(false)
+  const [remitoClientName, setRemitoClientName] = useState("")
+  const [remitoClientPhone, setRemitoClientPhone] = useState("")
+  const [remitoNotes, setRemitoNotes] = useState("")
+  const [remitoSending, setRemitoSending] = useState(false)
 
   const modelObj = iphoneModels.find((m) => m.id === selectedModel)
   const colorObj = colors.find((c) => c.id === selectedColor)
@@ -140,6 +149,38 @@ export default function VendedorPage() {
     if (!isReady) return ""
     return processTemplate(defaultSettings.messages.longTemplate, messageVars, saleType === "financiado")
   }, [isReady, messageVars, saleType])
+
+  const handleCrearRemito = async () => {
+    if (!profile || !selectedModel || !selectedCapacity || !selectedCondition || !remitoClientName) return
+    setRemitoSending(true)
+    try {
+      await crearRemito({
+        id: crypto.randomUUID(),
+        vendor_id: profile.id,
+        vendor_name: profile.name,
+        client_name: remitoClientName,
+        client_phone: remitoClientPhone,
+        model: modelObj?.name ?? selectedModel,
+        model_id: selectedModel,
+        capacity: selectedCapacity,
+        color: colorObj?.name ?? selectedColor,
+        condition: selectedCondition,
+        sale_type: saleType,
+        installments,
+        price_usd: priceUSD,
+        notes: remitoNotes || null,
+        status: "pendiente",
+      })
+      toast.success("Remito enviado al admin")
+      setRemitoClientName("")
+      setRemitoClientPhone("")
+      setRemitoNotes("")
+    } catch {
+      toast.error("Error al crear remito")
+    } finally {
+      setRemitoSending(false)
+    }
+  }
 
   const handleCopy = (text: string, type: "short" | "long") => {
     navigator.clipboard.writeText(text)
@@ -415,6 +456,72 @@ export default function VendedorPage() {
                     )
                   })()}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Crear Remito */}
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="w-4 h-4 text-primary" />
+                Crear Remito
+              </CardTitle>
+              <CardDescription>
+                Enviá la venta al admin para que la confirme
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!selectedModel || !selectedCapacity || !selectedCondition ? (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary text-muted-foreground text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  Primero completá el equipo y la forma de pago
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      Nombre del cliente *
+                    </Label>
+                    <Input
+                      value={remitoClientName}
+                      onChange={(e) => setRemitoClientName(e.target.value)}
+                      placeholder="Ej: Juan Pérez"
+                      className="bg-secondary border-transparent"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" />
+                      Teléfono
+                    </Label>
+                    <Input
+                      value={remitoClientPhone}
+                      onChange={(e) => setRemitoClientPhone(e.target.value)}
+                      placeholder="Ej: +54 11 1234-5678"
+                      className="bg-secondary border-transparent"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notas (opcional)</Label>
+                    <Textarea
+                      value={remitoNotes}
+                      onChange={(e) => setRemitoNotes(e.target.value)}
+                      placeholder="Alguna aclaración para el admin…"
+                      className="bg-secondary border-transparent resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={!remitoClientName || remitoSending}
+                    onClick={handleCrearRemito}
+                  >
+                    <SendHorizonal className="w-4 h-4 mr-2" />
+                    {remitoSending ? "Enviando…" : "Enviar remito al admin"}
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>
