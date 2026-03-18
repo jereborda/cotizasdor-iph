@@ -36,9 +36,10 @@ import {
   colors,
   conditions,
   defaultSettings,
+  vendorPriceKey,
 } from "@/lib/mock-data"
-import { vendorPriceKey } from "@/lib/mock-data"
 import { useAppState } from "@/lib/app-state"
+import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
 function processTemplate(
@@ -65,6 +66,7 @@ function processTemplate(
 
 export default function VendedorPage() {
   const { dollar, vendorPrices } = useAppState()
+  const { profile } = useAuth()
 
   const [selectedModel, setSelectedModel] = useState("")
   const [selectedCapacity, setSelectedCapacity] = useState("")
@@ -323,6 +325,14 @@ export default function VendedorPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Debug: mostrar clave buscada */}
+              {selectedModel && selectedCapacity && selectedCondition && (
+                <p className="text-xs text-muted-foreground font-mono mb-2 p-2 bg-secondary rounded">
+                  Clave: {vendorPriceKey(selectedModel, selectedCapacity, selectedCondition)}
+                  {" | Precios cargados: "}{Object.keys(vendorPrices).length}
+                </p>
+              )}
+
               {!selectedModel || !selectedCapacity || !selectedCondition ? (
                 <p className="text-sm text-muted-foreground">
                   Completá el equipo para ver el precio
@@ -378,6 +388,32 @@ export default function VendedorPage() {
                   <p className="text-xs text-muted-foreground">
                     Dólar Blue: ${dollar.blue.toLocaleString("es-AR")}
                   </p>
+
+                  {/* Comisión del vendedor */}
+                  {profile && profile.commission_value > 0 && (() => {
+                    const base = saleType === "financiado" && financedTotal !== null ? financedTotal : priceUSD!
+                    const comision = profile.commission_type === "percentage"
+                      ? base * (profile.commission_value / 100)
+                      : profile.commission_value
+                    return (
+                      <div className="mt-1 pt-3 border-t border-border flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Tu comisión</p>
+                          <p className="text-sm font-semibold font-mono text-green-500">
+                            USD {comision.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {profile.commission_type === "percentage"
+                              ? `${profile.commission_value}% sobre precio ${saleType}`
+                              : `Fijo`}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          ≈ ${(comision * dollar.blue).toLocaleString("es-AR", { maximumFractionDigits: 0 })} ARS
+                        </p>
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
             </CardContent>

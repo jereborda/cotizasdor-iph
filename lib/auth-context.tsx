@@ -10,6 +10,8 @@ export interface UserProfile {
   id: string
   name: string
   role: UserRole
+  commission_type: "percentage" | "fixed"
+  commission_value: number
 }
 
 interface AuthState {
@@ -25,12 +27,16 @@ const AuthContext = createContext<AuthState | null>(null)
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, role")
+    .select("id, name, role, commission_type, commission_value")
     .eq("id", userId)
     .single()
 
   if (error || !data) return null
-  return data as UserProfile
+  return {
+    ...data,
+    commission_type: data.commission_type ?? "percentage",
+    commission_value: data.commission_value ?? 0,
+  } as UserProfile
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
