@@ -154,7 +154,7 @@ export default function CotizadorPage() {
     const installmentUSD = priceFinanciadoUSD / 3
     const installmentARS = installmentUSD * quotation.dollarRate
 
-    // Commission calculation
+    // Commission is always on the cash price (financing surcharge is pure net profit for the owner)
     let commissionUSD = 0
     if (quotation.hasVendor) {
       commissionUSD = quotation.commissionType === "fixed"
