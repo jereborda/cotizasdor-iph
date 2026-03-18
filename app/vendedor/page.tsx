@@ -141,6 +141,10 @@ export default function VendedorPage() {
         : "",
       precioFinanciado: financedTotal !== null ? financedTotal.toFixed(0) : "",
       recargoFinanciacion: defaultSettings.financing.defaultSurcharge.toString(),
+      cuota1ARS: installmentAmount !== null
+        ? new Intl.NumberFormat("es-AR").format(Math.round(installmentAmount * dollar.blue))
+        : "",
+      dolarHoy: new Intl.NumberFormat("es-AR").format(dollar.blue),
     }
 
     // Per-installment amounts

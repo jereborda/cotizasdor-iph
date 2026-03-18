@@ -430,8 +430,9 @@ export const defaultSettings = {
 Precio contado: USD {{precioContado}}
 {{#financiado}}
 Precio financiado en 3 cuotas: USD {{precioFinanciado}}
+1° cuota: ~${{cuota1ARS}} ARS (dólar hoy ${{dolarHoy}})
 
-Las cuotas se abonan en pesos al valor del dólar venta del día de pago.
+Las cuotas 2 y 3 se abonan en pesos al valor del dólar del día de pago.
 {{/financiado}}
 
 Si querés, te lo reservo.`,
@@ -448,11 +449,11 @@ Estado: {{estado}}
 Precio total financiado: USD {{precioFinanciado}}
 Recargo: {{recargoFinanciacion}}%
 
-Cuota 1: USD {{cuota1}}
+Cuota 1: USD {{cuota1}} (~${{cuota1ARS}} ARS, dólar hoy ${{dolarHoy}})
 Cuota 2: USD {{cuota2}}
 Cuota 3: USD {{cuota3}}
 
-Las cuotas se abonan en pesos argentinos al valor del dólar venta del día de pago.
+Las cuotas 2 y 3 se abonan en pesos argentinos al valor del dólar venta del día de pago.
 {{/financiado}}
 
 Si tenés alguna consulta, estoy a disposición.`,
