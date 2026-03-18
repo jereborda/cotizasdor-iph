@@ -162,8 +162,8 @@ export default function CotizadorPage() {
         : (priceContadoUSD * quotation.commissionValue) / 100
     }
 
-    // Net profit after commission
-    const netProfitUSD = profit - commissionUSD
+    // Net profit after commission (financing surcharge is also profit)
+    const netProfitUSD = profit + (quotation.hasFinancing ? financingSurchargeAmount : 0) - commissionUSD
 
     // Partner split
     let partner1Profit = 0
