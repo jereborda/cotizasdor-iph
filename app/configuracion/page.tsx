@@ -11,6 +11,7 @@ import {
   Save,
   Plus,
   Trash2,
+  Tag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +33,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { defaultSettings } from "@/lib/mock-data"
+import { defaultSettings, iphoneModels, capacities, conditions, vendorPriceKey } from "@/lib/mock-data"
+import { useAppState } from "@/lib/app-state"
 import { toast } from "sonner"
 
 type VendorEntry = {
@@ -43,6 +45,7 @@ type VendorEntry = {
 }
 
 export default function ConfiguracionPage() {
+  const { vendorPrices, saveVendorPrice } = useAppState()
   // --- Dólar ---
   const [dollarSource, setDollarSource] = useState(defaultSettings.dollar.source)
   const [dollarDefaultType, setDollarDefaultType] = useState(defaultSettings.dollar.defaultType)
@@ -66,6 +69,10 @@ export default function ConfiguracionPage() {
   // --- Mensajes ---
   const [shortTemplate, setShortTemplate] = useState(defaultSettings.messages.shortTemplate)
   const [longTemplate, setLongTemplate] = useState(defaultSettings.messages.longTemplate)
+
+  // --- Precios Vendedor ---
+  const [selectedVendorModel, setSelectedVendorModel] = useState("")
+  const [vendorPriceInputs, setVendorPriceInputs] = useState<Record<string, string>>({})
 
   const handleSave = (section: string) => {
     toast.success(`${section} guardado correctamente`)
@@ -103,7 +110,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="dollar">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1">
           <TabsTrigger value="dollar" className="flex items-center gap-1.5 text-xs sm:text-sm">
             <DollarSign className="w-3.5 h-3.5" />
             Dólar
@@ -120,7 +127,11 @@ export default function ConfiguracionPage() {
             <UserCheck className="w-3.5 h-3.5" />
             Vendedores
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center gap-1.5 text-xs sm:text-sm col-span-2 sm:col-span-1">
+          <TabsTrigger value="vendorprices" className="flex items-center gap-1.5 text-xs sm:text-sm">
+            <Tag className="w-3.5 h-3.5" />
+            Precios
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="flex items-center gap-1.5 text-xs sm:text-sm">
             <MessageSquare className="w-3.5 h-3.5" />
             Mensajes
           </TabsTrigger>
@@ -450,7 +461,122 @@ export default function ConfiguracionPage() {
           </Card>
         </TabsContent>
 
-        {/* E. Mensajes */}
+        {/* E. Precios Vendedor */}
+        <TabsContent value="vendorprices" className="mt-6">
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-primary" />
+                Precios para Vendedores
+              </CardTitle>
+              <CardDescription>
+                Fijá el precio de venta (USD) por modelo, capacidad y estado. El vendedor solo verá estos precios, sin costos ni ganancias.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Model selector */}
+              <div className="space-y-2">
+                <Label>Elegí el modelo</Label>
+                <Select value={selectedVendorModel} onValueChange={(v) => {
+                  setSelectedVendorModel(v)
+                  setVendorPriceInputs({})
+                }}>
+                  <SelectTrigger className="bg-secondary border-transparent">
+                    <SelectValue placeholder="Seleccioná un modelo…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[13, 14, 15, 16, 17].map((gen) => (
+                      <div key={gen}>
+                        <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
+                          iPhone {gen}
+                        </div>
+                        {iphoneModels
+                          .filter((m) => m.generation === gen)
+                          .map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Price grid */}
+              {selectedVendorModel && (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Capacidad</th>
+                          {conditions.map((cond) => (
+                            <th key={cond.id} className="text-left py-2 pr-4 font-medium text-muted-foreground min-w-[140px]">
+                              {cond.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {capacities.map((cap) => (
+                          <tr key={cap}>
+                            <td className="py-3 pr-4 font-medium font-mono">{cap}</td>
+                            {conditions.map((cond) => {
+                              const key = vendorPriceKey(selectedVendorModel, cap, cond.id)
+                              const saved = vendorPrices[key]
+                              const inputVal = vendorPriceInputs[key] ?? (saved !== undefined ? String(saved) : "")
+                              return (
+                                <td key={cond.id} className="py-2 pr-4">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-muted-foreground text-xs">USD</span>
+                                    <Input
+                                      type="number"
+                                      value={inputVal}
+                                      onChange={(e) =>
+                                        setVendorPriceInputs((prev) => ({ ...prev, [key]: e.target.value }))
+                                      }
+                                      className="bg-secondary border-transparent font-mono w-24"
+                                      placeholder="—"
+                                      min={0}
+                                    />
+                                  </div>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-secondary/50 text-xs text-muted-foreground">
+                    Dejá en blanco las combinaciones que no manejás. El vendedor verá "Precio no configurado" para esas opciones.
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      let count = 0
+                      for (const [key, val] of Object.entries(vendorPriceInputs)) {
+                        const num = parseFloat(val)
+                        if (!isNaN(num) && num > 0) {
+                          saveVendorPrice(key, num)
+                          count++
+                        }
+                      }
+                      toast.success(`${count} precio${count !== 1 ? "s" : ""} guardado${count !== 1 ? "s" : ""}`)
+                    }}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Guardar precios
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* F. Mensajes */}
         <TabsContent value="messages" className="mt-6">
           <div className="space-y-6">
             <Card className="bg-card border-border">

@@ -7,8 +7,11 @@ import {
   insertSale,
   updateInstallment,
   updateSaleStatus,
+  updateSale,
   fetchModelCosts,
   upsertModelCost,
+  fetchVendorPrices,
+  upsertVendorPrice,
 } from "@/lib/supabase"
 
 interface DollarData {
@@ -24,10 +27,13 @@ interface AppState {
   salesLoading: boolean
   dollar: DollarData
   modelCosts: Record<string, number>
+  vendorPrices: Record<string, number>
   agregarVenta: (sale: Sale) => Promise<void>
+  editarVenta: (saleId: string, patch: Partial<Omit<Sale, 'installments'>>) => Promise<void>
   marcarCuotaCobrada: (installmentId: string, dollarRate: number) => Promise<void>
   refreshDollar: () => Promise<void>
   saveModelCost: (modelId: string, costUsd: number) => void
+  saveVendorPrice: (key: string, priceUsd: number) => void
 }
 
 const AppStateContext = createContext<AppState | null>(null)
@@ -36,6 +42,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [sales, setSales] = useState<Sale[]>([])
   const [salesLoading, setSalesLoading] = useState(true)
   const [modelCosts, setModelCosts] = useState<Record<string, number>>({})
+  const [vendorPrices, setVendorPrices] = useState<Record<string, number>>({})
   const [dollar, setDollar] = useState<DollarData>({
     blue: currentDollarRate.blue,
     compra: 1330,
@@ -54,6 +61,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     fetchModelCosts()
       .then((data) => setModelCosts(data))
       .catch(() => { /* model_costs table may not exist yet */ })
+
+    fetchVendorPrices()
+      .then((data) => setVendorPrices(data))
+      .catch(() => { /* vendor_prices table may not exist yet */ })
   }, [])
 
   // ─── Dollar rate ─────────────────────────────────────────────────────────────
@@ -84,10 +95,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     upsertModelCost(modelId, costUsd).catch(console.error)
   }, [])
 
+  const saveVendorPrice = useCallback((key: string, priceUsd: number) => {
+    setVendorPrices((prev) => ({ ...prev, [key]: priceUsd }))
+    upsertVendorPrice(key, priceUsd).catch(console.error)
+  }, [])
+
   // ─── Actions ──────────────────────────────────────────────────────────────────
   const agregarVenta = useCallback(async (sale: Sale) => {
     await insertSale(sale)
     setSales((prev) => [sale, ...prev])
+  }, [])
+
+  const editarVenta = useCallback(async (saleId: string, patch: Partial<Omit<Sale, 'installments'>>) => {
+    await updateSale(saleId, patch)
+    setSales((prev) =>
+      prev.map((s) => (s.id === saleId ? { ...s, ...patch } : s))
+    )
   }, [])
 
   const marcarCuotaCobrada = useCallback(async (installmentId: string, dollarRate: number) => {
@@ -155,7 +178,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppStateContext.Provider
-      value={{ sales, salesLoading, dollar, modelCosts, agregarVenta, marcarCuotaCobrada, refreshDollar: fetchDollar, saveModelCost }}
+      value={{ sales, salesLoading, dollar, modelCosts, vendorPrices, agregarVenta, editarVenta, marcarCuotaCobrada, refreshDollar: fetchDollar, saveModelCost, saveVendorPrice }}
     >
       {children}
     </AppStateContext.Provider>

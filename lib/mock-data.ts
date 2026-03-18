@@ -459,6 +459,11 @@ Si tenés alguna consulta, estoy a disposición.`,
   },
 }
 
+// Vendor Price key: "modelId_capacity_condition" e.g. "iphone-16-pro_256GB_nuevo"
+export function vendorPriceKey(modelId: string, capacity: string, condition: string) {
+  return `${modelId}_${capacity}_${condition}`
+}
+
 // Reports data
 export function getReportsData() {
   const totalSales = mockSales.length

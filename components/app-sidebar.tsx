@@ -10,20 +10,34 @@ import {
   BarChart3,
   Settings,
   Smartphone,
+  Tag,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
-const navigation = [
+const adminNav = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Cotizador", href: "/cotizador", icon: Calculator },
+  { name: "Vendedor", href: "/vendedor", icon: Tag },
   { name: "Ventas", href: "/ventas", icon: ShoppingCart },
   { name: "Cuotas", href: "/cuotas", icon: CreditCard },
   { name: "Reportes", href: "/reportes", icon: BarChart3 },
   { name: "Configuración", href: "/configuracion", icon: Settings },
 ]
 
+const vendorNav = [
+  { name: "Cotizaciones", href: "/vendedor", icon: Tag },
+]
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const { profile, signOut } = useAuth()
+
+  const navigation = profile?.role === "vendor" ? vendorNav : adminNav
+  const initials = profile?.name
+    ? profile.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "?"
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border">
@@ -61,16 +75,27 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-sidebar-border">
+      <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-xs font-semibold text-primary-foreground">JD</span>
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <span className="text-xs font-semibold text-primary-foreground">{initials}</span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-sidebar-foreground">Jeremías</span>
-            <span className="text-xs text-muted-foreground">Admin</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-sidebar-foreground truncate">
+              {profile?.name ?? "—"}
+            </span>
+            <span className="text-xs text-muted-foreground capitalize">
+              {profile?.role === "vendor" ? "Vendedor" : "Admin"}
+            </span>
           </div>
         </div>
+        <button
+          onClick={() => signOut()}
+          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Cerrar sesión
+        </button>
       </div>
     </aside>
   )
