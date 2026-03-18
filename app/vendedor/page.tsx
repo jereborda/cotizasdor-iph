@@ -90,6 +90,21 @@ export default function VendedorPage() {
   const colorObj = colors.find((c) => c.id === selectedColor)
   const conditionObj = conditions.find((c) => c.id === selectedCondition)
 
+  // Filter available options based on configured prices
+  const availableModels = iphoneModels.filter((m) =>
+    Object.keys(vendorPrices).some((k) => k.startsWith(`${m.id}_`))
+  )
+  const availableCapacities = selectedModel
+    ? capacities.filter((cap) =>
+        Object.keys(vendorPrices).some((k) => k.startsWith(`${selectedModel}_${cap}_`))
+      )
+    : []
+  const availableConditions = selectedModel && selectedCapacity
+    ? conditions.filter((cond) =>
+        vendorPrices[vendorPriceKey(selectedModel, selectedCapacity, cond.id)] !== undefined
+      )
+    : []
+
   // Get the price configured by admin
   const priceKey = selectedModel && selectedCapacity && selectedCondition
     ? vendorPriceKey(selectedModel, selectedCapacity, selectedCondition)
@@ -222,25 +237,27 @@ export default function VendedorPage() {
               {/* Model */}
               <div className="space-y-2">
                 <Label>Modelo</Label>
-                <Select value={selectedModel} onValueChange={(v) => { setSelectedModel(v); setSelectedCapacity(""); }}>
+                <Select value={selectedModel} onValueChange={(v) => { setSelectedModel(v); setSelectedCapacity(""); setSelectedCondition(""); }}>
                   <SelectTrigger className="bg-secondary border-transparent">
                     <SelectValue placeholder="Elegí el modelo…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[13, 14, 15, 16, 17].map((gen) => (
-                      <div key={gen}>
-                        <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
-                          iPhone {gen}
-                        </div>
-                        {iphoneModels
-                          .filter((m) => m.generation === gen)
-                          .map((m) => (
+                    {[13, 14, 15, 16, 17].map((gen) => {
+                      const genModels = availableModels.filter((m) => m.generation === gen)
+                      if (genModels.length === 0) return null
+                      return (
+                        <div key={gen}>
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
+                            iPhone {gen}
+                          </div>
+                          {genModels.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
                               {m.name}
                             </SelectItem>
                           ))}
-                      </div>
-                    ))}
+                        </div>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -248,12 +265,12 @@ export default function VendedorPage() {
               {/* Capacity */}
               <div className="space-y-2">
                 <Label>Capacidad</Label>
-                <Select value={selectedCapacity} onValueChange={setSelectedCapacity} disabled={!selectedModel}>
+                <Select value={selectedCapacity} onValueChange={(v) => { setSelectedCapacity(v); setSelectedCondition(""); }} disabled={!selectedModel || availableCapacities.length === 0}>
                   <SelectTrigger className="bg-secondary border-transparent">
                     <SelectValue placeholder="Elegí la capacidad…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {capacities.map((c) => (
+                    {availableCapacities.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -263,12 +280,12 @@ export default function VendedorPage() {
               {/* Condition */}
               <div className="space-y-2">
                 <Label>Estado</Label>
-                <Select value={selectedCondition} onValueChange={setSelectedCondition} disabled={!selectedModel}>
+                <Select value={selectedCondition} onValueChange={setSelectedCondition} disabled={!selectedCapacity || availableConditions.length === 0}>
                   <SelectTrigger className="bg-secondary border-transparent">
                     <SelectValue placeholder="Elegí el estado…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {conditions.map((c) => (
+                    {availableConditions.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -366,14 +383,6 @@ export default function VendedorPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Debug: mostrar clave buscada */}
-              {selectedModel && selectedCapacity && selectedCondition && (
-                <p className="text-xs text-muted-foreground font-mono mb-2 p-2 bg-secondary rounded">
-                  Clave: {vendorPriceKey(selectedModel, selectedCapacity, selectedCondition)}
-                  {" | Precios cargados: "}{Object.keys(vendorPrices).length}
-                </p>
-              )}
-
               {!selectedModel || !selectedCapacity || !selectedCondition ? (
                 <p className="text-sm text-muted-foreground">
                   Completá el equipo para ver el precio
