@@ -430,7 +430,7 @@ export const defaultSettings = {
 Precio contado: USD {{precioContado}}
 {{#financiado}}
 Precio financiado en 3 cuotas: USD {{precioFinanciado}}
-1° cuota: ~${{cuota1ARS}} ARS (dólar hoy ${{dolarHoy}})
+1° cuota: ~\${{cuota1ARS}} ARS (dólar hoy \${{dolarHoy}})
 
 Las cuotas 2 y 3 se abonan en pesos al valor del dólar del día de pago.
 {{/financiado}}
@@ -449,7 +449,7 @@ Estado: {{estado}}
 Precio total financiado: USD {{precioFinanciado}}
 Recargo: {{recargoFinanciacion}}%
 
-Cuota 1: USD {{cuota1}} (~${{cuota1ARS}} ARS, dólar hoy ${{dolarHoy}})
+Cuota 1: USD {{cuota1}} (~\${{cuota1ARS}} ARS, dólar hoy \${{dolarHoy}})
 Cuota 2: USD {{cuota2}}
 Cuota 3: USD {{cuota3}}
 
